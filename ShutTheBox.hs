@@ -16,7 +16,7 @@ import qualified Data.Array as Array
 shutTheBox :: (Set Int -> Int) -> IO ()
 shutTheBox score = loop (Set.fromAscList [1..9])
   where
-    vals = values score
+    vals = values score :: Array Int Double
     loop tiles = do
       putStrLn (showTiles tiles)
       putStr "Roll: "
@@ -52,7 +52,7 @@ possibilities :: Set Int -> Int -> [Set Int]
 possibilities up roll =
   map (up `Set.difference`) (filter (`Set.isSubsetOf` up) (partitions ! roll)) 
 
-bestChoice :: Array Int Double -> Set Int -> Int -> Maybe (Set Int)
+bestChoice :: Ord a => Array Int a -> Set Int -> Int -> Maybe (Set Int)
 bestChoice vals up roll =
   let options = possibilities up roll in
   if null options 
@@ -69,16 +69,16 @@ indexToTiles n = let
   powersOf2 = zip [1..] (takeWhile (<= n) (map (2^) [(0 :: Int)..]))
   in Set.fromList [ k | (k, p) <- powersOf2, p .&. n /= 0 ]
 
-oneDie :: [(Int, Double)]
+oneDie :: Fractional a => [(Int, a)]
 oneDie = map (, 1/6) [1..6]
 
-twoDice :: [(Int, Double)]
-twoDice = zip [2..12] (map (/36) ([1..6] ++ [5,4..1]))
+twoDice :: Fractional a => [(Int, a)]
+twoDice = zip [2..12] (map ((/36) . fromInteger) ([1..6] ++ [5,4..1]))
 
 weightedSum :: Num b => (a -> b) -> [(a, b)] -> b
 weightedSum f = sum . map (\(x, w) -> f x * w)
 
-values :: (Set Int -> Int) -> Array Int Double
+values :: (Ord a, Fractional a) => (Set Int -> Int) -> Array Int a
 values score = let
   arr = Array.listArray (0, 511) (map (value . indexToTiles) [0..512])
   value tiles = 
